@@ -1,0 +1,84 @@
+<aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+  <div class="sidebar__brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M9 6.5h9.5L24 12v13.5H9V6.5Z" fill="url(#brandGrad)" opacity=".95"/>
+        <path d="M18.5 6.5V12H24" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M12.5 16h8M12.5 20h5.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="brandGrad" x1="9" y1="6.5" x2="24" y2="25.5" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#818cf8"/><stop offset="1" stop-color="#6d28d9"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </span>
+    <span class="brand-copy">
+      <span class="brand-name">Invoice<span>AI</span></span>
+      <span class="brand-sub">Extraction Suite</span>
+    </span>
+    <button class="icon-btn sidebar__close" id="sidebar-close" type="button" aria-label="Close navigation">
+      <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+    </button>
+  </div>
+
+  <nav class="sidebar__nav">
+    <p class="nav-label">Workspace</p>
+    <a class="nav-item is-active" href="#dashboard" data-nav="dashboard">
+      <svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav-item" href="#history" data-nav="history">
+      <svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>
+      <span>Extraction history</span>
+      <span class="nav-count" id="nav-job-count">0</span>
+    </a>
+    <a class="nav-item" href="#upload" data-nav="upload">
+      <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
+      <span>Upload invoices</span>
+    </a>
+
+    <p class="nav-label">Developers</p>
+    <a class="nav-item" href="/api/docs" target="_blank" rel="noopener">
+      <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>
+      <span>API reference</span>
+      <svg class="icon icon--xs nav-ext" aria-hidden="true"><use href="#i-external"/></svg>
+    </a>
+    <a class="nav-item" href="/api/openapi.json" target="_blank" rel="noopener">
+      <svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg>
+      <span>OpenAPI schema</span>
+      <svg class="icon icon--xs nav-ext" aria-hidden="true"><use href="#i-external"/></svg>
+    </a>
+  </nav>
+
+  <div class="sidebar__footer">
+    <div class="system-card">
+      <div class="system-card__head">
+        <span class="system-card__title">Runtime status</span>
+        <span class="pill pill--ok pill--xs"><span class="dot"></span> Live</span>
+      </div>
+      <div class="system-card__row">
+        <span class="dot {{ 'dot--ok' if gemini_configured else 'dot--warn' }}"></span>
+        <span>Gemini API</span>
+        <span class="system-card__value">{{ 'Connected' if gemini_configured else 'Missing key' }}</span>
+      </div>
+      <div class="system-card__row">
+        <span class="dot {{ 'dot--ok' if tesseract_available else 'dot--warn' }}"></span>
+        <span>Tesseract OCR</span>
+        <span class="system-card__value">{{ 'Ready' if tesseract_available else 'Unavailable' }}</span>
+      </div>
+      <p class="system-card__meta" title="{{ tesseract_version or 'Tesseract not detected' }}">
+        {{ gemini_model }}{% if tesseract_version %} &middot; {{ tesseract_version.split(' ')[1] or 'OCR' }}{% endif %}
+      </p>
+    </div>
+
+    <div class="user-chip">
+      <span class="avatar" aria-hidden="true">IE</span>
+      <span class="user-chip__copy">
+        <span class="user-chip__name">Local workspace</span>
+        <span class="user-chip__plan">v{{ app_version }} &middot; self-hosted</span>
+      </span>
+      <svg class="icon icon--xs" aria-hidden="true"><use href="#i-shield"/></svg>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-scrim" id="sidebar-scrim" hidden></div>

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }} · Invoice extraction workspace{% endblock %}
+{% block body_class %}app{% endblock %}
+
+{% block body %}
+{% include "partials/icons.html" %}
+{% include "partials/sidebar.html" %}
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="topbar__left">
+      <button class="icon-btn topbar__menu" id="sidebar-open" type="button" aria-label="Open navigation">
+        <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+      </button>
+      <div class="topbar__title">
+        <p class="breadcrumb">Workspace <span>/</span> Extraction</p>
+        <h1>Invoice extraction</h1>
+        <p class="topbar__subtitle">Turn PDF invoices into clean, validated JSON in seconds.</p>
+      </div>
+    </div>
+    <div class="topbar__actions">
+      <span class="pill pill--ok pill--hide-sm"><span class="dot"></span> API online</span>
+      <a class="btn btn--ghost" href="/api/docs" target="_blank" rel="noopener">
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-code"/></svg>
+        API docs
+        <svg class="icon icon--xs" aria-hidden="true"><use href="#i-external"/></svg>
+      </a>
+      <button class="btn btn--primary" id="new-upload-btn" type="button" data-scroll-to="upload">
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-plus"/></svg>
+        New extraction
+      </button>
+    </div>
+  </header>
+
+  <main class="content" id="dashboard">
+    <section class="stats" aria-label="Workspace overview">
+      <article class="stat-card">
+        <div class="stat-card__top">
+          <span class="stat-card__icon tone-brand"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg></span>
+          <span class="stat-card__label">Total documents</span>
+        </div>
+        <p class="stat-card__value" id="stat-total">0</p>
+        <p class="stat-card__hint">Every invoice in this workspace</p>
+      </article>
+      <article class="stat-card">
+        <div class="stat-card__top">
+          <span class="stat-card__icon tone-ok"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg></span>
+          <span class="stat-card__label">Completed</span>
+        </div>
+        <p class="stat-card__value" id="stat-completed">0</p>
+        <p class="stat-card__hint" id="stat-success-hint">No completed extractions yet</p>
+      </article>
+      <article class="stat-card">
+        <div class="stat-card__top">
+          <span class="stat-card__icon tone-info"><svg class="icon" aria-hidden="true"><use href="#i-zap"/></svg></span>
+          <span class="stat-card__label">In progress</span>
+        </div>
+        <p class="stat-card__value" id="stat-active">0</p>
+        <p class="stat-card__hint">Queued or currently extracting</p>
+      </article>
+      <article class="stat-card">
+        <div class="stat-card__top">
+          <span class="stat-card__icon tone-danger"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+          <span class="stat-card__label">Needs attention</span>
+        </div>
+        <p class="stat-card__value" id="stat-failed">0</p>
+        <p class="stat-card__hint">Failed extractions to review</p>
+      </article>
+    </section>
+
+    <section class="workspace-grid">
+      <article class="card upload-card" id="upload">
+        <header class="card__head">
+          <div>
+            <p class="eyebrow"><span class="eyebrow__index">01</span> New extraction</p>
+            <h2 class="card__title">Drop your invoices</h2>
+            <p class="card__subtitle">Digital or scanned PDFs are handled automatically.</p>
+          </div>
+          <span class="chip"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-shield"/></svg> Private by default</span>
+        </header>
+
+        <div class="dropzone" id="dropzone" tabindex="0" role="button"
+             aria-label="Upload PDF invoices by dragging them here or pressing Enter to browse">
+          <input type="file" id="file-input" class="visually-hidden" accept="application/pdf,.pdf" multiple>
+          <span class="dropzone__icon"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg></span>
+          <p class="dropzone__title">Drag &amp; drop PDF invoices here</p>
+          <p class="dropzone__hint">or <span class="dropzone__link">browse your files</span></p>
+          <div class="dropzone__meta">
+            <span>PDF only</span><span class="dot-sep"></span>
+            <span>Max {{ max_file_size_mb }} MB each</span><span class="dot-sep"></span>
+            <span>{{ max_pages }} pages max</span>
+          </div>
+        </div>
+
+        <div class="file-list" id="file-list" hidden></div>
+
+        <div class="upload-progress" id="upload-progress" hidden>
+          <div class="upload-progress__row">
+            <span id="upload-progress-label">Uploading invoices…</span>
+            <span id="upload-progress-value">0%</span>
+          </div>
+          <div class="progress"><span class="progress__bar" id="upload-progress-bar" style="width:0%"></span></div>
+        </div>
+
+        <footer class="upload-card__footer">
+          <p class="upload-card__limits">
+            <svg class="icon icon--xs" aria-hidden="true"><use href="#i-cpu"/></svg>
+            {{ max_files }} files per batch
+          </p>
+          <div class="upload-card__actions">
+            <button class="btn btn--ghost btn--sm" id="clear-files" type="button" hidden>Clear</button>
+            <button class="btn btn--primary" id="upload-btn" type="button" disabled>
+              <svg class="icon icon--sm" aria-hidden="true"><use href="#i-sparkles"/></svg>
+              <span id="upload-btn-label">Extract invoices</span>
+            </button>
+          </div>
+        </footer>
+      </article>
+
+      <aside class="card pipeline-card" aria-label="Extraction pipeline">
+        <header class="card__head card__head--compact">
+          <div>
+            <p class="eyebrow">How it works</p>
+            <h2 class="card__title">Three-stage pipeline</h2>
+          </div>
+          <span class="chip chip--brand"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-zap"/></svg> Automated</span>
+        </header>
+
+        <ol class="pipeline">
+          <li class="pipeline__step">
+            <span class="pipeline__marker">1</span>
+            <div>
+              <p class="pipeline__title">Analyse the PDF</p>
+              <p class="pipeline__text">PyMuPDF detects a real text layer versus scanned pages and enforces structural limits.</p>
+            </div>
+            <span class="pipeline__tag">PyMuPDF</span>
+          </li>
+          <li class="pipeline__step">
+            <span class="pipeline__marker">2</span>
+            <div>
+              <p class="pipeline__title">Read every page</p>
+              <p class="pipeline__text">Selectable text is used directly; scans go through Tesseract OCR with Gemini Vision as fallback.</p>
+            </div>
+            <span class="pipeline__tag">Tesseract</span>
+          </li>
+          <li class="pipeline__step">
+            <span class="pipeline__marker">3</span>
+            <div>
+              <p class="pipeline__title">Structure &amp; validate</p>
+              <p class="pipeline__text">Gemini returns schema-constrained JSON; Pydantic normalises dates, amounts and currency.</p>
+            </div>
+            <span class="pipeline__tag">Gemini</span>
+          </li>
+        </ol>
+
+        <div class="engine-chips">
+          <span class="engine-chip"><span class="dot dot--ok"></span> {{ gemini_model }}</span>
+          <span class="engine-chip"><span class="dot {{ 'dot--ok' if tesseract_available else 'dot--warn' }}"></span> Tesseract OCR</span>
+          <span class="engine-chip"><span class="dot dot--ok"></span> Pydantic v2</span>
+        </div>
+
+        <p class="pipeline__note">
+          <svg class="icon icon--xs" aria-hidden="true"><use href="#i-alert"/></svg>
+          Missing fields are returned as <code>null</code> — never guessed.
+        </p>
+      </aside>
+    </section>
+
+    <section class="card table-card" id="history">
+      <header class="card__head table-card__head">
+        <div>
+          <p class="eyebrow"><span class="eyebrow__index">02</span> History</p>
+          <h2 class="card__title">Extraction history</h2>
+          <p class="card__subtitle">Results stay available for {{ job_ttl_hours }} hours on this machine.</p>
+        </div>
+        <div class="table-tools">
+          <div class="search">
+            <svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" id="job-search" placeholder="Search invoice, vendor or file…" autocomplete="off" aria-label="Search jobs">
+          </div>
+          <label class="select-wrap">
+            <span class="visually-hidden">Filter by status</span>
+            <select id="status-filter">
+              <option value="ALL">All statuses</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="QUEUED">Queued</option>
+              <option value="FAILED">Failed</option>
+            </select>
+            <svg class="icon icon--xs" aria-hidden="true"><use href="#i-chevron"/></svg>
+          </label>
+          <button class="icon-btn" id="refresh-jobs" type="button" aria-label="Refresh jobs" title="Refresh">
+            <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="table-wrap">
+        <table class="jobs-table">
+          <thead>
+            <tr>
+              <th scope="col">Document</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num">Total</th>
+              <th scope="col">Source</th>
+              <th scope="col">Uploaded</th>
+              <th scope="col" class="actions-col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="jobs-body"></tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="jobs-empty" hidden>
+        <span class="empty-state__icon"><svg class="icon" aria-hidden="true"><use href="#i-inbox"/></svg></span>
+        <h3 id="empty-title">No invoices yet</h3>
+        <p id="empty-text">Upload your first PDF invoice and the structured result will appear here.</p>
+        <button class="btn btn--primary btn--sm" type="button" data-scroll-to="upload">
+          <svg class="icon icon--sm" aria-hidden="true"><use href="#i-upload"/></svg>
+          Upload an invoice
+        </button>
+      </div>
+
+      <footer class="table-card__footer">
+        <span id="table-summary">0 documents</span>
+        <span class="table-card__legend"><span class="dot dot--ok"></span> Live updates via WebSocket</span>
+      </footer>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>{{ app_name }} v{{ app_version }} &middot; FastAPI + PyMuPDF + Gemini</span>
+    <span class="app-footer__sep"></span>
+    <span>Results are stored locally under <code>data/</code></span>
+  </footer>
+</div>
+
+<div class="modal" id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-filename" aria-hidden="true">
+  <div class="modal__backdrop" data-close-modal></div>
+  <div class="modal__panel" role="document">
+    <header class="modal__header">
+      <div class="modal__heading">
+        <span class="status-badge" id="detail-status">—</span>
+        <h2 class="modal__title" id="detail-filename">Invoice</h2>
+        <p class="modal__meta" id="detail-meta"></p>
+      </div>
+      <div class="modal__actions">
+        <a class="btn btn--ghost btn--sm" id="detail-open-pdf" href="#" target="_blank" rel="noopener">
+          <svg class="icon icon--sm" aria-hidden="true"><use href="#i-eye"/></svg>
+          PDF
+        </a>
+        <a class="btn btn--primary btn--sm" id="detail-download" href="#">
+          <svg class="icon icon--sm" aria-hidden="true"><use href="#i-download"/></svg>
+          JSON
+        </a>
+        <button class="icon-btn" type="button" data-close-modal aria-label="Close details">
+          <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="modal__body">
+      <div class="detail-alert" id="detail-alert" hidden></div>
+
+      <section class="detail-section">
+        <div class="detail-section__head">
+          <h3>Invoice fields</h3>
+          <span class="chip chip--xs" id="detail-model"></span>
+        </div>
+        <div class="detail-grid" id="detail-fields"></div>
+      </section>
+
+      <section class="detail-section">
+        <div class="detail-section__head">
+          <h3>Line items</h3>
+          <span class="chip chip--xs" id="line-item-count">0 items</span>
+        </div>
+        <div class="table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th scope="col" class="num">#</th>
+                <th scope="col">Description</th>
+                <th scope="col" class="num">Qty</th>
+                <th scope="col" class="num">Unit price</th>
+                <th scope="col" class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body"></tbody>
+          </table>
+        </div>
+        <p class="detail-empty" id="line-items-empty" hidden>No line items were detected in this invoice.</p>
+      </section>
+
+      <section class="detail-section" id="detail-warnings-section" hidden>
+        <div class="detail-section__head">
+          <h3>Validation notes</h3>
+        </div>
+        <ul class="warning-list" id="detail-warnings"></ul>
+      </section>
+
+      <section class="detail-section">
+        <div class="detail-section__head">
+          <h3>Processing details</h3>
+        </div>
+        <div class="timing-row" id="detail-timings"></div>
+      </section>
+
+      <details class="json-viewer">
+        <summary>
+          <span>Raw JSON response</span>
+          <span class="json-viewer__hint">Click to expand</span>
+        </summary>
+        <pre id="detail-json" tabindex="0"></pre>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" role="status" aria-live="polite"></div>
+
+<script id="app-config" type="application/json">{{ {
+  "maxFileSizeMb": max_file_size_mb,
+  "maxPages": max_pages,
+  "maxFiles": max_files,
+  "geminiConfigured": gemini_configured,
+  "tesseractAvailable": tesseract_available,
+  "appVersion": app_version
+} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/app.js"></script>
+{% endblock %}

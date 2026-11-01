@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# Development / testing dependencies
+pytest>=8.3
+pytest-asyncio>=0.24
+pytest-cov>=5
+httpx>=0.28
