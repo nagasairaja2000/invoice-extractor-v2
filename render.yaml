@@ -1,13 +1,10 @@
 services:
   - type: web
     name: invoice-extractor-v2
-    env: python
+    env: docker
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
@@ -20,5 +17,3 @@ services:
         value: 0.0.0.0
       - key: LOG_LEVEL
         value: INFO
-      - key: TESSERACT_CMD
-        value: /usr/bin/tesseract
