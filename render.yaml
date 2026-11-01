@@ -3,7 +3,7 @@ services:
     name: invoice-extractor-v2
     env: python
     plan: free
-    buildCommand: "apt-get update && apt-get install -y tesseract-ocr tesseract-ocr-eng libtesseract-dev && pip install -r requirements.txt"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
@@ -20,3 +20,5 @@ services:
         value: 0.0.0.0
       - key: LOG_LEVEL
         value: INFO
+      - key: TESSERACT_CMD
+        value: /usr/bin/tesseract
